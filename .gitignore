@@ -5,6 +5,16 @@ build/
 dist/
 wheels/
 *.egg-info
+uv.lock
 
 # Virtual environments
 .venv
+
+# Keys and IDs
+.env
+
+# Data files
+/data/*.csv
+
+# Logs
+*.log
