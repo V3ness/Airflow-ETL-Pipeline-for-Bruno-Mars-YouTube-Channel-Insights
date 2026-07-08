@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, UTC
-from zoneinfo import ZoneInfo
 import logging
 import isodate
 import emoji
@@ -10,7 +9,8 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(filename='ETL/transform.log', level=logging.INFO, filemode='w')
 
 def clean_published_date(date_str: str) -> str:
-    """Convert Zulu suffix datetime to Singapore time.
+    """
+    Convert Zulu suffix datetime to Singapore time.
 
     Args:
         date_str (str): Raw datetime format from YT API
@@ -36,7 +36,8 @@ def clean_published_date(date_str: str) -> str:
         raise
 
 def parse_duration(duration_str: str) -> int:
-    """Convert ISO 8601 duration string to seconds.
+    """
+    Convert ISO 8601 duration string to seconds.
 
     Args:
         duration_str (str): Raw duration format from YT API
@@ -58,7 +59,8 @@ def parse_duration(duration_str: str) -> int:
         raise
 
 def clean_title(title: str) -> str:
-    """Clean the title column.
+    """
+    Clean the title column.
 
     Args:
         title (str): Raw title string format from YT API
@@ -86,7 +88,8 @@ def clean_title(title: str) -> str:
         raise
 
 def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd.DataFrame:
-    """Transform the video metadata by cleaning published_date and title, parsing duration,
+    """
+    Transform the video metadata by cleaning published_date and title, parsing duration,
     handling missing values, adding extract_date, vid_category and channel columns.
 
     Args:

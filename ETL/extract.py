@@ -1,8 +1,7 @@
-import requests
 import pandas as pd
 import logging
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List
 from dotenv import load_dotenv
 import googleapiclient.discovery
 
@@ -20,7 +19,8 @@ def get_youtube_client():
     return googleapiclient.discovery.build('youtube', 'v3', developerKey=API_KEY)
     
 def get_channel_metadata(youtube, channel_id: str) -> Dict[str, str | int]:
-    """Fetch public channel metadata from YouTube API.
+    """
+    Fetch public channel metadata from YouTube API.
 
     Args:
         youtube (googleapiclient): YouTube Client
@@ -64,7 +64,8 @@ def get_channel_metadata(youtube, channel_id: str) -> Dict[str, str | int]:
         raise # Re-raise for caller to handle
 
 def get_video_ids_from_channel(youtube, channel_id: str, playlist_id: str, max_results: int = 50) -> List[str]:
-    """Fetch list of video IDs from channel's uploads playlist.
+    """
+    Fetch list of video IDs from channel's uploads playlist.
 
     Args:
         youtube (googleapiclient): YouTube Client
@@ -105,7 +106,8 @@ def get_video_ids_from_channel(youtube, channel_id: str, playlist_id: str, max_r
         raise # Re-raise for caller to handle
 
 def get_videos_metadata(youtube, video_ids: List[str]) -> pd.DataFrame:
-    """Fetch metadata for each video.
+    """
+    Fetch metadata for each video.
 
     Args:
         youtube (googleapiclient): YouTube Client
