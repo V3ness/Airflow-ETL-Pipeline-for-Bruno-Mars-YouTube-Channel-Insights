@@ -14,5 +14,6 @@ dependencies = [
     "pandas>=3.0.3",
     "psycopg2>=2.9.12",
     "python-dotenv>=1.2.2",
+    "regex>=2026.6.28",
     "sqlalchemy>=2.0.51",
 ]
