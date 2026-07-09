@@ -3,10 +3,10 @@ import numpy as np
 from datetime import datetime, UTC
 import logging
 import isodate
-import emoji
+import regex
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='ETL/transform.log', level=logging.INFO, filemode='w')
+logging.basicConfig(filename='etl/transform.log', level=logging.INFO, filemode='w')
 
 def clean_published_date(date_str: str) -> str:
     """
@@ -58,6 +58,11 @@ def parse_duration(duration_str: str) -> int:
         logger.error(f"Incorrect type for {duration_str}.")
         raise
 
+def remove_emojis(text):
+    pattern = regex.compile(r'[\p{Emoji}&&\n\p{Emoji_Component}]', regex.V1)
+    
+    return pattern.sub('', text)
+
 def clean_title(title: str) -> str:
     """
     Clean the title column.
@@ -73,7 +78,7 @@ def clean_title(title: str) -> str:
         cleaned_title = title.strip()
         
         # Remove emojis
-        cleaned_title = emoji.replace_emoji(cleaned_title, replace="")
+        cleaned_title = remove_emojis(cleaned_title)
         
         # Clean using regex
         cleaned_title = cleaned_title.replace("’", "'").replace("–", "-")
@@ -116,7 +121,7 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
         df.fillna({'views': 0, 'likes': 0, 'comments': 0}, inplace=True)
         
         # Add extract_date col
-        df['extract_date'] = datetime.now(UTC)
+        df['extract_date'] = datetime.now(UTC).isoformat()
         logger.info("Added extract_date column.")
         
         # Add vid_category col to categorize vid title

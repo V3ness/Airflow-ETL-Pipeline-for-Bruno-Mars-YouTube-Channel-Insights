@@ -156,7 +156,7 @@ def extract_all() -> pd.DataFrame:
     Return: combined DataFrame (add channel_name column for reference)
     """
     channel_id = "UCoUM-UJ7rirJYP8CQ0EIaHA" # Bruno Mars Channel ID
-    logging.basicConfig(filename='ETL/extract.log', level=logging.INFO, filemode='w')
+    logging.basicConfig(filename='etl/extract.log', level=logging.INFO, filemode='w')
     
     logger.info("Extracting data from YouTube API......")
     

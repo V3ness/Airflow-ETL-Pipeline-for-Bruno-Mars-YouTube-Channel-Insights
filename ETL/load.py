@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='ETL/load.log', level=logging.INFO, filemode='w')
+logging.basicConfig(filename='etl/load.log', level=logging.INFO, filemode='w')
 
 def get_connection_string():
     """
@@ -48,10 +48,6 @@ def create_table_if_not_exists(engine):
         channel_views BIGINT,
         extract_date TIMESTAMP
     );
-    
-    -- Create indexes for faster queries
-    CREATE INDEX IF NOT EXISTS idx_published_date ON bruno_yt_data(published_date);
-    CREATE INDEX IF NOT EXISTS idx_vid_category ON bruno_yt_data(vid_category);
     """
     
     try:
