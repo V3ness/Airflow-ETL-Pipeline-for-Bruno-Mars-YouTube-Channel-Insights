@@ -152,6 +152,9 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
         logger.info("Converted all numeric columns to int64.")
         logger.info("Transformed data completed.")
         
+        # Drop rows if duration = 0
+        df = df[df['duration'] != 0]
+        
         return df
     
     except Exception as e:
