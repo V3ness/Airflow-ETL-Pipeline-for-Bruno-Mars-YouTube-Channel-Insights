@@ -111,7 +111,7 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
         df['published_date'] = df['published_date'].apply(clean_published_date)
         logger.info("Finish transforming column published_date.")
         
-        df['duration'] = df['duration'].apply(parse_duration)
+        df['duration_seconds'] = df['duration'].apply(parse_duration)
         logger.info("Finish transforming column duration.")
         
         df['title'] = df['title'].apply(clean_title)
@@ -145,12 +145,6 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
         df['channel_subscribers'] = channel_metadata['subscribers']
         df['channel_views'] = channel_metadata['views']
         logger.info("Added channel columns.")
-        
-        # Ensure all numeric columns are int64
-        numeric_cols = df.select_dtypes(include='number').columns
-        df[numeric_cols] = df[numeric_cols].astype('Int64') # handles missing value
-        logger.info("Converted all numeric columns to int64.")
-        logger.info("Transformed data completed.")
         
         # Drop rows if duration = 0
         df = df[df['duration'] != 0]
