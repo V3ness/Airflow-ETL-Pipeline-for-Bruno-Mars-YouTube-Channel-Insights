@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
     dag_id='bruno_mars_etl',
     start_date=datetime(year=2026, month=7, day=1, tz='Asia/Singapore'),
     description='Extract Bruno Mars YouTube data, transform, load to PostgreSQL',
+    end_date=datetime(year=2026, month=8, day=1, tz='Asia/Singapore'),
     schedule='@daily',
     catchup=False,
     tags=['youtube', 'bruno_mars', 'etl'],
@@ -55,7 +56,7 @@ def bruno_mars_etl():
     def load_data(transformed_data: dict):
         logger.info("Starting load...")
         df = pd.DataFrame(transformed_data)
-        rows_loaded = load_to_postgres(df, table_name='bruno_yt_data', if_exists='replace')
+        rows_loaded = load_to_postgres(df, table_name='bruno_yt_data')
         return rows_loaded
     
     # Task dependencies
