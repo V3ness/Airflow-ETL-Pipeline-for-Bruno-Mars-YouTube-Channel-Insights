@@ -10,11 +10,9 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # Import database utilities
-from db_utils import load_data_from_postgres, get_latest_extract_date, get_channel_summary
+from db_utils import load_data_from_postgres, get_latest_extract_date, get_channel_summary, clean_title
 
-# ============================================
 # CONFIGURATION
-# ============================================
 
 # Color theme
 COLORS = {
@@ -32,9 +30,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ============================================
 # PART 1: LOAD DATA (Cached for performance)
-# ============================================
 
 @st.cache_data(ttl=3600)  # Cache data for 1 hour
 def load_data():
@@ -43,14 +39,13 @@ def load_data():
     Streamlit's @st.cache_data keeps data in memory between reruns.
     """
     df = load_data_from_postgres()
+    df = clean_title(df)
     return df
 
 # Load the data
 df = load_data()
 
-# ============================================
 # PART 2: HEADER SECTION
-# ============================================
 
 st.markdown(f"""
     <div style="background-color: {COLORS['main']}; padding: 2rem; border-radius: 10px; margin-bottom: 2rem;">
@@ -88,9 +83,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# ============================================
 # PART 3: SIDEBAR / FILTERS
-# ============================================
 
 with st.sidebar:
     st.markdown(f"### Filter by Category")
@@ -114,35 +107,31 @@ if selected_category != 'All':
 else:
     filtered_df = df
 
-# ============================================
 # PART 4: CHARTS (2x2 Layout)
-# ============================================
 
 # Create 2x2 grid using columns
 row1_col1, row1_col2 = st.columns(2)
 row2_col1, row2_col2 = st.columns(2)
 
-# --------------------------------------------
 # Panel 1: Bar Chart - Views by Video Title
-# --------------------------------------------
 
 with row1_col1:
     st.markdown(f"### Views by Video")
     st.caption(f"Grouped by: {selected_category if selected_category != 'All' else 'All Categories'}")
     
-    # Prepare data - top 15 videos for readability
-    bar_df = filtered_df.nlargest(15, 'views').sort_values('views', ascending=True)
+    # Prepare data - top 10 videos for readability
+    bar_df = filtered_df.nlargest(10, 'views').sort_values('views', ascending=True)
     
     # Create bar chart
     fig_bar = px.bar(
         bar_df,
         x='views',
-        y='title',
+        y='title_cleaned',
         orientation='h',
         color='vid_category',
         color_discrete_sequence=[COLORS['main'], COLORS['secondary'], COLORS['contrast']],
         title=None,
-        labels={'views': 'Views', 'title': 'Video Title'},
+        labels={'views': 'Views', 'title_cleaned': 'Video Title', 'vid_category': 'Video Category'},
         hover_data={'views': ':,.0f'}
     )
     
@@ -155,9 +144,7 @@ with row1_col1:
     
     st.plotly_chart(fig_bar, use_container_width=True)
 
-# --------------------------------------------
 # Panel 2: Pie Chart - Distribution by Category
-# --------------------------------------------
 
 with row1_col2:
     st.markdown(f"### Views Distribution by Category")
@@ -173,6 +160,7 @@ with row1_col2:
         color_discrete_sequence=[COLORS['main'], COLORS['secondary'], COLORS['contrast'], '#ff6b6b', '#ffd93d'],
         title=None,
         hover_data={'views': ':,.0f'},
+        labels={'vid_category': 'Video Category'},
         hole=0.3  # Donut chart style
     )
     
@@ -185,9 +173,7 @@ with row1_col2:
     
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# --------------------------------------------
 # Panel 3: Table - Video Data Table
-# --------------------------------------------
 
 with row2_col1:
     st.markdown(f"### Video Details Table")
@@ -195,7 +181,7 @@ with row2_col1:
     
     # Select and format columns for display
     table_df = filtered_df[[
-        'title', 
+        'title_cleaned', 
         'vid_category', 
         'views', 
         'likes', 
@@ -234,9 +220,7 @@ with row2_col1:
         }
     )
 
-# --------------------------------------------
 # Panel 4: Line Chart - Timeline of Publications
-# --------------------------------------------
 
 with row2_col2:
     st.markdown(f"### Publication Timeline")
@@ -295,9 +279,7 @@ with row2_col2:
     
     st.plotly_chart(fig_line, use_container_width=True)
 
-# ============================================
 # PART 5: FOOTER
-# ============================================
 
 st.markdown("---")
 st.caption(f"Data source: YouTube API | Dashboard built with Streamlit | {datetime.now().strftime('%B %d, %Y')}")
