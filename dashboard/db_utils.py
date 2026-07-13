@@ -7,7 +7,6 @@ import pandas as pd
 import logging
 import os
 import re
-import sys
 from datetime import datetime
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
@@ -16,27 +15,15 @@ from pathlib import Path
 # Load env vars once
 load_dotenv()
 
+# Get the project root directory
+PROJECT_ROOT = Path(__file__).parent.parent
+LOG_DIR = PROJECT_ROOT / 'logs'
+
+# Create logs directory if it doesn't exist
+LOG_DIR.mkdir(exist_ok=True)
+
 logger = logging.getLogger(__name__)
-
-# Check if running on Streamlit Cloud
-IS_STREAMLIT_CLOUD = os.getenv('STREAMLIT_SERVER', '').lower() == 'true'
-
-if IS_STREAMLIT_CLOUD:
-    # Use console logging (no files)
-    logging.basicConfig(
-        level=logging.INFO,
-        handlers=[logging.StreamHandler(sys.stdout)]
-    )
-else:
-    # Use file logging locally
-    PROJECT_ROOT = Path(__file__).parent.parent
-    LOG_DIR = PROJECT_ROOT / 'logs'
-    LOG_DIR.mkdir(exist_ok=True)
-    
-    logging.basicConfig(
-        filename=LOG_DIR / 'db_utils.log',
-        level=logging.INFO,
-    )
+logging.basicConfig(filename='dashboard/logs/db_utils.log')
 
 def get_connection_string() -> str:
     """
