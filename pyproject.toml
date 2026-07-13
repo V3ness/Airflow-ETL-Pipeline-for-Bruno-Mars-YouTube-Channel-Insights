@@ -1,12 +1,11 @@
 [project]
 name = "bruno-yt-airflow"
 version = "0.1.0"
-description = "Add your description here"
+description = "Bruno Mars YouTube ETL Pipeline with Airflow"
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 dependencies = [
     "apache-airflow>=3.3.0",
-    "emoji>=2.15.0",
     "google-api-python-client>=2.198.0",
     "google-auth-oauthlib>=1.4.0",
     "isodate>=0.7.2",

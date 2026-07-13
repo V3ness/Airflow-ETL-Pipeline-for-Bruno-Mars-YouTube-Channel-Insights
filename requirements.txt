@@ -1,0 +1,12 @@
+# requirements.txt
+apache-airflow>=3.3.0
+google-api-python-client>=2.198.0
+google-auth-oauthlib>=1.4.0
+isodate>=0.7.2
+pandas>=3.0.3
+plotly>=6.9.0
+psycopg2-binary>=2.9.12
+python-dotenv>=1.2.2
+regex>=2026.6.28
+sqlalchemy>=2.0.51
+streamlit>=1.59.1
