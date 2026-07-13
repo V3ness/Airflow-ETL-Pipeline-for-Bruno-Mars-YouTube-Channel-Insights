@@ -135,7 +135,7 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
             df['title'].str.contains('Official Documentary Video', case=False, na=False),
         ]
         
-        categories = ['Lyric Video', 'Audio', 'Musi Video', 'Live Performance', 'Video', 'Alternative Video', 'Documentary Video']
+        categories = ['Lyric Video', 'Audio', 'Music Video', 'Live Performance', 'Video', 'Alternative Video', 'Documentary Video']
         
         df['vid_category'] = np.select(conditions, categories, default='Other')
         logger.info("Added vid_category column.")
