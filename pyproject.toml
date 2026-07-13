@@ -18,3 +18,4 @@ dependencies = [
     "sqlalchemy>=2.0.51",
     "streamlit>=1.59.1",
 ]
+package-mode = false
