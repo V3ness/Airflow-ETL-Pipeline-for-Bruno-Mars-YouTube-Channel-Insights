@@ -6,6 +6,7 @@ Separate from visualization logic for clean separation.
 import pandas as pd
 import logging
 import os
+import re
 from datetime import datetime
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
@@ -93,3 +94,45 @@ def get_channel_summary(df: pd.DataFrame) -> dict:
         'total_subscribers': df['channel_subscribers'].iloc[0],
         'video_count': len(df)
     }
+
+def clean_title(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove the video category string from the title.
+
+    Args:
+        df: DataFrame with 'title' and 'vid_category' columns
+
+    Returns:
+        DataFrame: With cleaned titles
+    """
+    df_copy = df.copy()
+    
+    category_patterns = {
+        'Music Video': ['(Official Music Video)', '[Official Music Video]', 'Official Music Video'],
+        'Lyric Video': ['(Official Lyric Video)', '[Official Lyric Video]', 'Official Lyric Video'],
+        'Audio': ['(Official Audio)', '[Official Audio]', 'Official Audio'],
+        'Video': ['(Official Video)', '[Official Video]', 'Official Video'],
+        'Live Performance': ['(Official Live Performance)', '[Official Live Performance]', 'Official Live Performance'],
+        'Alternative Video': ['(Official Alternative Video)', '[Official Alternative Video]', 'Official Alternative Video'],
+        'Documentary Video': ['(Official Documentary Video)', '[Official Documentary Video]', 'Official Documentary Video'],
+    }
+    
+    def remove_pattern(title: str, category: str) -> str:
+        if category == 'Other' or pd.isna(title):
+            return title
+        
+        patterns = category_patterns.get(category, [])
+        
+        cleaned = title
+        for pattern in patterns:
+            cleaned = cleaned.replace(pattern, '')
+            
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+        cleaned = cleaned.strip(' -–—|()[]')
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+        
+        return cleaned.strip() if cleaned.strip() else title
+    
+    df['title_cleaned'] = df.apply(lambda row: remove_pattern(row['title'], row['vid_category']), axis=1)
+    
+    return df
