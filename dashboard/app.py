@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # Import database utilities
-from db_utils import load_data_from_postgres, get_latest_extract_date, get_channel_summary, clean_title
+from db_utils import load_data_from_postgres, get_latest_extract_date, get_channel_summary
 
 # CONFIGURATION
 
@@ -39,7 +39,6 @@ def load_data():
     Streamlit's @st.cache_data keeps data in memory between reruns.
     """
     df = load_data_from_postgres()
-    df = clean_title(df)
     return df
 
 # Load the data
@@ -120,7 +119,7 @@ with row1_col1:
     st.caption(f"Grouped by: {selected_category if selected_category != 'All' else 'All Categories'}")
     
     # Prepare data - top 10 videos for readability
-    bar_df = filtered_df.nlargest(10, 'views').sort_values('views', ascending=True)
+    bar_df = filtered_df.nlargest(10, 'views').sort_values('views', ascending=False)
     
     # Create bar chart
     fig_bar = px.bar(
@@ -132,7 +131,8 @@ with row1_col1:
         color_discrete_sequence=[COLORS['main'], COLORS['secondary'], COLORS['contrast']],
         title=None,
         labels={'views': 'Views', 'title_cleaned': 'Video Title', 'vid_category': 'Video Category'},
-        hover_data={'views': ':,.0f'}
+        hover_data={'views': ':,.0f'},
+        category_orders={'title_cleaned': bar_df['title_cleaned'].tolist()}
     )
     
     fig_bar.update_layout(

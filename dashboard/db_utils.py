@@ -49,6 +49,9 @@ def load_data_from_postgres() -> pd.DataFrame:
         
         df = pd.read_sql(query, engine)
         
+        # Clean titles
+        df = clean_title(df)
+        
         logger.info(f"Loaded {len(df)} rows from database")
         return df
         
