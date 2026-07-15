@@ -1,15 +1,18 @@
 import pandas as pd
-import logging
 import os
 from typing import Dict, List
 from dotenv import load_dotenv
 import googleapiclient.discovery
+import time
+from utils.kafka_utils import (
+    create_producer, 
+    log_extract_started, 
+    log_extract_completed,
+    log_error
+)
 
 # Load env vars once
 load_dotenv()
-
-# Instantiate namespace tracking
-logger = logging.getLogger(__name__)
 
 API_KEY = os.getenv("YT_API_KEY")
     
@@ -60,7 +63,7 @@ def get_channel_metadata(youtube, channel_id: str) -> Dict[str, str | int]:
         }
 
     except Exception as e:
-        logger.error(f"Failed to fetch channel metadata for {channel_id}: {str(e)}")
+        print(f"Failed to fetch channel metadata for {channel_id}: {str(e)}")
         raise # Re-raise for caller to handle
 
 def get_video_ids_from_channel(youtube, channel_id: str, playlist_id: str, max_results: int = 50) -> List[str]:
@@ -102,7 +105,7 @@ def get_video_ids_from_channel(youtube, channel_id: str, playlist_id: str, max_r
         return video_ids
        
     except Exception as e:
-        logger.error(f"Failed to fetch video ids for {channel_id}: {str(e)}")
+        print(f"Failed to fetch video ids for {channel_id}: {str(e)}")
         raise # Re-raise for caller to handle
 
 def get_videos_metadata(youtube, video_ids: List[str]) -> pd.DataFrame:
@@ -147,7 +150,7 @@ def get_videos_metadata(youtube, video_ids: List[str]) -> pd.DataFrame:
         return pd.DataFrame(video_data)
 
     except Exception as e:
-        logger.error(f"Failed to extract video metadata: {str(e)}")
+        print(f"Failed to extract video metadata: {str(e)}")
         raise # Re-raise for caller to handle
 
 def extract_all() -> pd.DataFrame:
@@ -155,27 +158,45 @@ def extract_all() -> pd.DataFrame:
     Orchestrate: get channel metadata → get video IDs → get video metadata
     Return: combined DataFrame (add channel_name column for reference)
     """
-    channel_id = "UCoUM-UJ7rirJYP8CQ0EIaHA" # Bruno Mars Channel ID
-    logging.basicConfig(filename='etl/extract.log', level=logging.INFO, filemode='w')
+    start_time = time.time()
+    channel_id = "UCoUM-UJ7rirJYP8CQ0EIaHA"
     
-    logger.info("Extracting data from YouTube API......")
+    # Create Kafka producer
+    producer = create_producer()
     
-    youtube = get_youtube_client()
-    logger.info("YouTube API initialized.")
+    # Log start
+    log_extract_started(producer, channel_id)
     
-    channel_metadata = get_channel_metadata(youtube, channel_id)
-    logger.info("Channel Metadata extracted.")
-    
-    playlist_id = channel_metadata.get('playlist_id', 'Unknown')
-    if playlist_id != 'Unknown':
-        video_ids = get_video_ids_from_channel(youtube, channel_id, playlist_id, max_results=150)
-    logger.info("Video IDs extracted.")
-    
-    videos_metadata = get_videos_metadata(youtube, video_ids)
-    logger.info("Video Metadata extracted.")
-    logger.info("Data Extraction Completed.")
-
-    return videos_metadata
+    try:
+        youtube = get_youtube_client()
+        
+        channel_metadata = get_channel_metadata(youtube, channel_id)
+        
+        playlist_id = channel_metadata.get('playlist_id', 'Unknown')
+        if playlist_id != 'Unknown':
+            video_ids = get_video_ids_from_channel(youtube, channel_id, playlist_id, max_results=150)
+        
+        videos_metadata = get_videos_metadata(youtube, video_ids)
+        
+        # Log success
+        duration = time.time() - start_time
+        log_extract_completed(producer, channel_id, len(videos_metadata), duration)
+        
+        # Close producer
+        if producer:
+            producer.close()
+        
+        return videos_metadata
+        
+    except Exception as e:
+        # Log error
+        log_error(producer, str(e), {
+            'channel_id': channel_id,
+            'phase': 'extract_all'
+        })
+        if producer:
+            producer.close()
+        raise
 
 if __name__ == "__main__":
     df = extract_all()

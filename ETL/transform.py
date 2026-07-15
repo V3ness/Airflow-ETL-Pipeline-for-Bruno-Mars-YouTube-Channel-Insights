@@ -1,12 +1,15 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, UTC
-import logging
 import isodate
 import regex
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename='etl/transform.log', level=logging.INFO, filemode='w')
+import time
+from utils.kafka_utils import (
+    create_producer,
+    log_transform_started,
+    log_transform_completed,
+    log_error
+)
 
 def clean_published_date(date_str: str) -> str:
     """
@@ -29,10 +32,10 @@ def clean_published_date(date_str: str) -> str:
         return utc_dt.strftime('%Y-%m-%d %H:%M:%S')
         
     except ValueError:
-        logger.error(f"Incorrect value for {date_str}.")
+        print(f"Incorrect value for {date_str}.")
         raise
     except TypeError:
-        logger.error(f"Incorrect type for {date_str}.")
+        print(f"Incorrect type for {date_str}.")
         raise
 
 def parse_duration(duration_str: str) -> int:
@@ -52,10 +55,10 @@ def parse_duration(duration_str: str) -> int:
         return total_seconds
 
     except ValueError:
-        logger.error(f"Incorrect value for {duration_str}.")
+        print(f"Incorrect value for {duration_str}.")
         raise
     except TypeError:
-        logger.error(f"Incorrect type for {duration_str}.")
+        print(f"Incorrect type for {duration_str}.")
         raise
 
 def remove_emojis(text):
@@ -86,10 +89,10 @@ def clean_title(title: str) -> str:
         return cleaned_title
         
     except ValueError:
-        logger.error(f"Incorrect value for {title}.")
+        print(f"Incorrect value for {title}.")
         raise
     except TypeError:
-        logger.error(f"Incorrect type for {title}.")
+        print(f"Incorrect type for {title}.")
         raise
 
 def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd.DataFrame:
@@ -104,25 +107,28 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
     Returns:
         pd.DataFrame: Transformed DataFrame
     """
+    start_time = time.time()
+    producer = create_producer()
+    
     try:
+        # Start log
+        log_transform_started(producer, len(raw_df))
+        
         df = raw_df.copy()
         
         # Data transformation
         df['published_date'] = df['published_date'].apply(clean_published_date)
-        logger.info("Finish transforming column published_date.")
         
         df['duration_seconds'] = df['duration'].apply(parse_duration)
-        logger.info("Finish transforming column duration.")
         
         df['title'] = df['title'].apply(clean_title)
-        logger.info("Finish transforming column title.")
         
         # Fill missing values on numeric cols
         df.fillna({'views': 0, 'likes': 0, 'comments': 0}, inplace=True)
         
         # Add extract_date col
         df['extract_date'] = datetime.now(UTC).isoformat()
-        logger.info("Added extract_date column.")
+
         
         # Add vid_category col to categorize vid title
         conditions = [
@@ -138,20 +144,31 @@ def transform_video_metadata(raw_df: pd.DataFrame, channel_metadata: dict) -> pd
         categories = ['Lyric Video', 'Audio', 'Music Video', 'Live Performance', 'Video', 'Alternative Video', 'Documentary Video']
         
         df['vid_category'] = np.select(conditions, categories, default='Other')
-        logger.info("Added vid_category column.")
         
         # Add channel columns from channel_metadata
         df['channel_title'] = channel_metadata['title']
         df['channel_subscribers'] = channel_metadata['subscribers']
         df['channel_views'] = channel_metadata['views']
-        logger.info("Added channel columns.")
         
         # Drop rows if duration = 0
         df = df[df['duration'] != 0]
         
+        # Log success with category distribution
+        duration = time.time() - start_time
+        category_counts = df['vid_category'].value_counts().to_dict()
+        log_transform_completed(producer, len(df), category_counts, duration)
+        
+        if producer:
+            producer.close()
+            
         return df
     
     except Exception as e:
-        logger.error(f"Failed to transform data: {str(e)}")
+        log_error(producer, str(e), {
+            'record_count': len(raw_df) if 'raw_df' in locals() else 0,
+            'phase': 'transform'
+        })
+        if producer:
+            producer.close()
         raise
     

@@ -1,12 +1,17 @@
 import pandas as pd
-import logging
 import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.types import Integer, BigInteger, String, DateTime
 from dotenv import load_dotenv
+import time
+from utils.kafka_utils import (
+    create_producer,
+    log_load_started,
+    log_load_completed,
+    log_error
+)
 
 load_dotenv()
-logger = logging.getLogger(__name__)
 
 def get_connection_string() -> str:
     db_user = os.getenv('DB_USER', 'postgres')
@@ -17,11 +22,16 @@ def get_connection_string() -> str:
     return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 def load_to_postgres(df: pd.DataFrame, table_name: str = 'bruno_yt_data', if_exists: str = 'replace') -> int:
+    start_time = time.time()
+    producer = create_producer()
+    
     try:
+        # Start log
+        log_load_started(producer, len(df))
+        
         connection_string = get_connection_string()
         engine = create_engine(connection_string)
-        logger.info(f"Database engine created. Target: {table_name}")
-        
+
         # Define exact column types
         dtype_mapping = {
             'video_id': String(50),
@@ -49,9 +59,21 @@ def load_to_postgres(df: pd.DataFrame, table_name: str = 'bruno_yt_data', if_exi
             chunksize=1000
         )
         
-        logger.info(f"Successfully loaded {rows_loaded} rows to '{table_name}'.")
+        # Log success
+        duration = time.time() - start_time
+        log_load_completed(producer, rows_loaded, table_name, duration)
+        
+        if producer:
+            producer.close()
+        
         return rows_loaded
         
     except Exception as e:
-        logger.error(f"Failed to load data to PostgreSQL: {str(e)}")
+        log_error(producer, str(e), {
+            'table_name': table_name,
+            'record_count': len(df) if 'df' in locals() else 0,
+            'phase': 'load'
+        })
+        if producer:
+            producer.close()
         raise
