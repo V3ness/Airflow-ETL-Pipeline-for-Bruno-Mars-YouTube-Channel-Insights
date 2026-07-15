@@ -10,3 +10,4 @@ python-dotenv>=1.2.2
 regex>=2026.6.28
 sqlalchemy>=2.0.51
 streamlit>=1.59.1
+kafka-python>=2.0.0
